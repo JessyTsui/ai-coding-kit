@@ -1,0 +1,113 @@
+name: Sync Mihomo Releases
+
+on:
+  # 每天检查一次新版本
+  schedule:
+    - cron: '0 8 * * *'  # UTC 8:00 = 北京时间 16:00
+  # 手动触发
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force update even if version unchanged'
+        required: false
+        default: 'false'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest Mihomo release
+        id: get_release
+        run: |
+          # 获取最新版本号
+          LATEST_VERSION=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | jq -r '.tag_name')
+          echo "Latest version: $LATEST_VERSION"
+          echo "version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
+          # 检查当前版本
+          CURRENT_VERSION=""
+          if [[ -f scripts/server/bin/VERSION ]]; then
+            CURRENT_VERSION=$(cat scripts/server/bin/VERSION)
+          fi
+          echo "Current version: $CURRENT_VERSION"
+          echo "current=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+
+          # 判断是否需要更新
+          if [[ "$LATEST_VERSION" != "$CURRENT_VERSION" ]] || [[ "${{ github.event.inputs.force_update }}" == "true" ]]; then
+            echo "needs_update=true" >> $GITHUB_OUTPUT
+          else
+            echo "needs_update=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Download Mihomo binaries
+        if: steps.get_release.outputs.needs_update == 'true'
+        run: |
+          VERSION=${{ steps.get_release.outputs.version }}
+          echo "Downloading Mihomo $VERSION..."
+
+          mkdir -p scripts/server/bin
+          cd scripts/server/bin
+
+          # 下载 amd64 版本
+          echo "Downloading amd64..."
+          wget -q "https://github.com/MetaCubeX/mihomo/releases/download/${VERSION}/mihomo-linux-amd64-${VERSION}.gz" -O mihomo-linux-amd64.gz
+
+          # 下载 arm64 版本
+          echo "Downloading arm64..."
+          wget -q "https://github.com/MetaCubeX/mihomo/releases/download/${VERSION}/mihomo-linux-arm64-${VERSION}.gz" -O mihomo-linux-arm64.gz
+
+          # 记录版本号
+          echo "$VERSION" > VERSION
+
+          # 显示下载结果
+          ls -lh *.gz VERSION
+          echo "Download completed!"
+
+      - name: Download UI Panel
+        if: steps.get_release.outputs.needs_update == 'true'
+        run: |
+          cd scripts/server/bin
+
+          # 获取最新 UI 版本
+          UI_VERSION=$(curl -s https://api.github.com/repos/MetaCubeX/metacubexd/releases/latest | jq -r '.tag_name')
+          echo "Downloading UI panel $UI_VERSION..."
+
+          wget -q "https://github.com/MetaCubeX/metacubexd/releases/download/${UI_VERSION}/compressed-dist.tgz" -O metacubexd.tgz
+
+          echo "$UI_VERSION" > UI_VERSION
+          ls -lh metacubexd.tgz
+
+      - name: Commit and push
+        if: steps.get_release.outputs.needs_update == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add scripts/server/bin/
+
+          VERSION=${{ steps.get_release.outputs.version }}
+          git commit -m "Sync Mihomo $VERSION binaries
+
+          - Updated mihomo-linux-amd64.gz
+          - Updated mihomo-linux-arm64.gz
+          - Updated metacubexd.tgz (UI panel)
+
+          Auto-synced by GitHub Actions"
+
+          git push
+
+      - name: Summary
+        run: |
+          if [[ "${{ steps.get_release.outputs.needs_update }}" == "true" ]]; then
+            echo "✅ Updated to Mihomo ${{ steps.get_release.outputs.version }}"
+          else
+            echo "ℹ️ Already up to date: ${{ steps.get_release.outputs.current }}"
+          fi

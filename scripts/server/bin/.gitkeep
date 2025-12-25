@@ -1,0 +1,28 @@
+# Mihomo Binaries
+
+This directory stores pre-downloaded Mihomo binaries, synced automatically by GitHub Actions.
+
+## Files
+
+- `mihomo-linux-amd64.gz` - Mihomo for x86_64
+- `mihomo-linux-arm64.gz` - Mihomo for ARM64
+- `metacubexd.tgz` - Web UI panel
+- `VERSION` - Current Mihomo version
+- `UI_VERSION` - Current UI version
+
+## Usage
+
+Upload to your server:
+
+```bash
+# Upload binary
+scp mihomo-linux-amd64.gz root@your-server:/tmp/mihomo.gz
+
+# Upload UI (optional)
+scp metacubexd.tgz root@your-server:/tmp/ui.tgz
+
+# Then run the install script
+sudo bash proxy-setup.sh
+```
+
+The script will detect `/tmp/mihomo.gz` and use it directly.
