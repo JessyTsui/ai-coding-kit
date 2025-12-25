@@ -12,6 +12,10 @@
 #   - 配置自动续期 (cron job)
 #===============================================================================
 
+# 禁用 apt 交互式提示 (内核更新、服务重启等)
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'

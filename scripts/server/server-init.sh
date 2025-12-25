@@ -9,6 +9,10 @@
 # 不使用 set -e，允许个别命令失败后继续执行
 # set -e
 
+# 禁用 apt 交互式提示 (内核更新、服务重启等)
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=a
+
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
