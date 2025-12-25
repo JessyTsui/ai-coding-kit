@@ -402,6 +402,14 @@ install_miniconda() {
 configure_nginx() {
     print_header "配置 Nginx"
 
+    # 检查域名是否设置
+    if [[ -z "$DOMAIN_NAME" ]]; then
+        print_error "域名未设置，跳过 Nginx 配置"
+        return 1
+    fi
+
+    print_info "正在为域名 ${DOMAIN_NAME} 配置 Nginx..."
+
     # 确保 nginx 已安装并运行
     sudo systemctl enable --now nginx
 
@@ -909,6 +917,10 @@ main() {
     check_sudo
     show_menu
 
+    # 调试输出
+    print_info "DEBUG: INSTALL_NGINX_CONFIG = $INSTALL_NGINX_CONFIG"
+    print_info "DEBUG: DOMAIN_NAME = $DOMAIN_NAME"
+
     # 执行安装
     [[ "$REGION" == "china" ]] && setup_china_mirrors
 
@@ -919,7 +931,14 @@ main() {
     [[ "$INSTALL_BASIC" == true ]] && install_basic_software
     [[ "$INSTALL_DOCKER" == true ]] && install_docker
     [[ "$INSTALL_MINICONDA" == true ]] && install_miniconda
-    [[ "$INSTALL_NGINX_CONFIG" == true ]] && configure_nginx
+
+    if [[ "$INSTALL_NGINX_CONFIG" == true ]]; then
+        print_info "准备配置 Nginx，域名: $DOMAIN_NAME"
+        configure_nginx
+    else
+        print_warning "跳过 Nginx 配置 (INSTALL_NGINX_CONFIG=$INSTALL_NGINX_CONFIG)"
+    fi
+
     [[ "$INSTALL_CHINESE" == true ]] && configure_chinese
 
     show_summary
