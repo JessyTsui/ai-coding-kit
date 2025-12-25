@@ -127,18 +127,53 @@ install_mihomo() {
     # 下载 mihomo
     print_info "下载 Mihomo ${MIHOMO_VERSION}..."
 
-    DOWNLOAD_URL="https://github.com/MetaCubeX/mihomo/releases/download/${MIHOMO_VERSION}/mihomo-linux-${ARCH}-${MIHOMO_VERSION}.gz"
+    # GitHub 原始地址
+    GITHUB_URL="https://github.com/MetaCubeX/mihomo/releases/download/${MIHOMO_VERSION}/mihomo-linux-${ARCH}-${MIHOMO_VERSION}.gz"
 
-    # 尝试直接下载，如果失败则提示用户
+    # 国内加速镜像列表
+    MIRROR_URLS=(
+        "https://mirror.ghproxy.com/${GITHUB_URL}"
+        "https://gh.ddlc.top/${GITHUB_URL}"
+        "https://github.moeyy.xyz/${GITHUB_URL}"
+        "${GITHUB_URL}"
+    )
+
     cd /tmp
-    if ! wget -q --show-progress "$DOWNLOAD_URL" -O mihomo.gz 2>/dev/null; then
-        print_warning "直接下载失败，尝试使用代理..."
-        print_info "如果你有可用的代理，请设置环境变量后重试:"
-        print_info "  export https_proxy=http://your-proxy:port"
-        print_info "  bash proxy-setup.sh"
+    DOWNLOAD_SUCCESS=false
+
+    for url in "${MIRROR_URLS[@]}"; do
+        if [[ "$url" == "$GITHUB_URL" ]]; then
+            print_info "尝试直接从 GitHub 下载..."
+        else
+            # 提取镜像域名
+            MIRROR_HOST=$(echo "$url" | sed -E 's|https://([^/]+)/.*|\1|')
+            print_info "尝试镜像: $MIRROR_HOST"
+        fi
+
+        if wget -q --show-progress --timeout=30 "$url" -O mihomo.gz 2>/dev/null; then
+            # 验证文件大小（至少 1MB）
+            FILE_SIZE=$(stat -c%s mihomo.gz 2>/dev/null || stat -f%z mihomo.gz 2>/dev/null)
+            if [[ "$FILE_SIZE" -gt 1000000 ]]; then
+                DOWNLOAD_SUCCESS=true
+                print_success "下载成功!"
+                break
+            else
+                print_warning "文件不完整，尝试下一个镜像..."
+                rm -f mihomo.gz
+            fi
+        else
+            print_warning "下载失败，尝试下一个镜像..."
+        fi
+    done
+
+    if [[ "$DOWNLOAD_SUCCESS" != true ]]; then
+        print_error "所有镜像下载失败"
         echo ""
-        print_info "或者手动下载后放到 /tmp/mihomo.gz:"
-        print_info "  下载地址: $DOWNLOAD_URL"
+        print_info "请手动下载后放到 /tmp/mihomo.gz:"
+        print_info "  下载地址: $GITHUB_URL"
+        echo ""
+        print_info "或者在本地下载后用 scp 上传:"
+        print_info "  scp mihomo.gz root@your-server:/tmp/"
 
         read -p "是否已手动下载到 /tmp/mihomo.gz? [y/N]: " manual_download
         if [[ ! "$manual_download" =~ ^[Yy]$ ]] || [[ ! -f /tmp/mihomo.gz ]]; then
@@ -164,11 +199,28 @@ install_mihomo() {
 
     # 下载 UI 面板 (可选)
     print_info "下载管理面板..."
-    if wget -q "https://github.com/MetaCubeX/metacubexd/releases/download/v1.143.0/compressed-dist.tgz" -O /tmp/ui.tgz 2>/dev/null; then
-        tar -xzf /tmp/ui.tgz -C $MIHOMO_DIR/ui --strip-components=1 2>/dev/null || true
-        rm -f /tmp/ui.tgz
-        print_success "管理面板安装成功"
-    else
+    UI_GITHUB_URL="https://github.com/MetaCubeX/metacubexd/releases/download/v1.143.0/compressed-dist.tgz"
+    UI_MIRROR_URLS=(
+        "https://mirror.ghproxy.com/${UI_GITHUB_URL}"
+        "https://gh.ddlc.top/${UI_GITHUB_URL}"
+        "https://github.moeyy.xyz/${UI_GITHUB_URL}"
+        "${UI_GITHUB_URL}"
+    )
+
+    UI_SUCCESS=false
+    for url in "${UI_MIRROR_URLS[@]}"; do
+        if wget -q --timeout=30 "$url" -O /tmp/ui.tgz 2>/dev/null; then
+            if [[ -s /tmp/ui.tgz ]]; then
+                tar -xzf /tmp/ui.tgz -C $MIHOMO_DIR/ui --strip-components=1 2>/dev/null || true
+                rm -f /tmp/ui.tgz
+                UI_SUCCESS=true
+                print_success "管理面板安装成功"
+                break
+            fi
+        fi
+    done
+
+    if [[ "$UI_SUCCESS" != true ]]; then
         print_warning "管理面板下载失败，可稍后手动安装"
     fi
 
