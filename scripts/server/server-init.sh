@@ -345,136 +345,331 @@ configure_nginx() {
     sudo mkdir -p /var/www/api.${DOMAIN_NAME}/html
 
     # 创建主域名静态页面
-    sudo tee /var/www/${DOMAIN_NAME}/html/index.html > /dev/null <<EOF
+    sudo tee /var/www/${DOMAIN_NAME}/html/index.html > /dev/null <<'HTMLEOF'
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${DOMAIN_NAME}</title>
+    <title>DOMAIN_PLACEHOLDER</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #0f0f23;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+        .bg-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+        }
+        .bg-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: breathe 8s ease-in-out infinite;
+        }
+        @keyframes breathe {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+            50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; }
         }
         .container {
             text-align: center;
+            color: #e2e8f0;
+            padding: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
             color: white;
-            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3);
+            animation: float 6s ease-in-out infinite;
         }
-        h1 { font-size: 3rem; margin-bottom: 1rem; }
-        p { font-size: 1.2rem; opacity: 0.9; }
-        .status {
-            margin-top: 2rem;
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+        .tagline {
+            font-size: 1.25rem;
+            color: #94a3b8;
+            margin-bottom: 3rem;
+            font-weight: 300;
+        }
+        .status-card {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
             padding: 1rem 2rem;
-            background: rgba(255,255,255,0.2);
-            border-radius: 10px;
-            display: inline-block;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 100px;
+            backdrop-filter: blur(10px);
         }
-        .status::before {
-            content: '';
-            display: inline-block;
+        .status-dot {
             width: 10px;
             height: 10px;
-            background: #4ade80;
+            background: #22c55e;
             border-radius: 50%;
-            margin-right: 10px;
-            animation: pulse 2s infinite;
+            box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+            animation: pulse 2s ease-in-out infinite;
         }
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { box-shadow: 0 0 10px rgba(34, 197, 94, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(34, 197, 94, 0.8); }
+        }
+        .status-text {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .footer {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #475569;
+            font-size: 0.85rem;
         }
     </style>
 </head>
 <body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
     <div class="container">
-        <h1>${DOMAIN_NAME}</h1>
-        <p>Welcome to our website</p>
-        <div class="status">Server Running</div>
+        <div class="logo">LOGO_PLACEHOLDER</div>
+        <h1>DOMAIN_PLACEHOLDER</h1>
+        <p class="tagline">Building something amazing</p>
+        <div class="status-card">
+            <div class="status-dot"></div>
+            <span class="status-text">All Systems Operational</span>
+        </div>
     </div>
+    <div class="footer">Powered by Nginx</div>
 </body>
 </html>
-EOF
+HTMLEOF
+
+    # 替换占位符
+    LOGO_LETTER=$(echo "${DOMAIN_NAME}" | cut -c1 | tr '[:lower:]' '[:upper:]')
+    sudo sed -i "s/DOMAIN_PLACEHOLDER/${DOMAIN_NAME}/g" /var/www/${DOMAIN_NAME}/html/index.html
+    sudo sed -i "s/LOGO_PLACEHOLDER/${LOGO_LETTER}/g" /var/www/${DOMAIN_NAME}/html/index.html
 
     # 创建 API 子域名静态页面
-    sudo tee /var/www/api.${DOMAIN_NAME}/html/index.html > /dev/null <<EOF
+    sudo tee /var/www/api.${DOMAIN_NAME}/html/index.html > /dev/null <<'HTMLEOF'
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API - ${DOMAIN_NAME}</title>
+    <title>API - DOMAIN_PLACEHOLDER</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Monaco', 'Menlo', monospace;
-            background: #1a1a2e;
+            font-family: 'SF Mono', 'Fira Code', 'Monaco', monospace;
+            background: linear-gradient(180deg, #0c0c1d 0%, #1a1a3e 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #eee;
+            color: #e2e8f0;
+            padding: 2rem;
         }
-        .container {
-            background: #16213e;
-            padding: 2rem 3rem;
-            border-radius: 10px;
-            border: 1px solid #0f3460;
-            max-width: 500px;
+        .card {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 16px;
+            padding: 2.5rem;
+            max-width: 520px;
+            width: 100%;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
-        h1 {
-            color: #e94560;
-            font-size: 1.5rem;
+        .header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+        }
+        .api-badge {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.05em;
+        }
+        .domain {
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+        .endpoint-section {
             margin-bottom: 1.5rem;
         }
+        .section-title {
+            color: #64748b;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
         .endpoint {
-            background: #0f3460;
-            padding: 1rem;
-            border-radius: 5px;
-            margin-bottom: 1rem;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
         .method {
-            color: #4ade80;
-            font-weight: bold;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            color: white;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.8rem;
         }
-        .path { color: #60a5fa; }
-        .json {
-            background: #1a1a2e;
-            padding: 1rem;
-            border-radius: 5px;
+        .path {
+            color: #60a5fa;
+            font-size: 0.95rem;
+        }
+        .response-section {
+            margin-top: 1.5rem;
+        }
+        .response {
+            background: #0f172a;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            border-radius: 10px;
+            padding: 1.25rem;
             font-size: 0.9rem;
-            white-space: pre;
+            line-height: 1.8;
+            overflow-x: auto;
         }
-        .key { color: #e94560; }
-        .value { color: #4ade80; }
+        .line {
+            display: block;
+        }
+        .brace { color: #94a3b8; }
+        .key { color: #f472b6; }
+        .string { color: #a5f3fc; }
+        .status-value {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: blink 2s ease-in-out infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .footer {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(99, 102, 241, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+        .version-badge {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            color: #a5b4fc;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>API.${DOMAIN_NAME}</h1>
-        <div class="endpoint">
-            <span class="method">GET</span>
-            <span class="path">/api/status</span>
+    <div class="card">
+        <div class="header">
+            <span class="api-badge">API</span>
+            <span class="domain">DOMAIN_PLACEHOLDER</span>
         </div>
-        <div class="json">{
-  <span class="key">"status"</span>: <span class="value">"online"</span>,
-  <span class="key">"version"</span>: <span class="value">"1.0.0"</span>,
-  <span class="key">"timestamp"</span>: <span class="value">"$(date -Iseconds)"</span>
-}</div>
+
+        <div class="endpoint-section">
+            <div class="section-title">Endpoint</div>
+            <div class="endpoint">
+                <span class="method">GET</span>
+                <span class="path">/api/health</span>
+            </div>
+        </div>
+
+        <div class="response-section">
+            <div class="section-title">Response</div>
+            <div class="response">
+                <span class="line"><span class="brace">{</span></span>
+                <span class="line">  <span class="key">"status"</span>: <span class="status-value"><span class="status-dot"></span><span class="string">"healthy"</span></span>,</span>
+                <span class="line">  <span class="key">"service"</span>: <span class="string">"DOMAIN_PLACEHOLDER"</span>,</span>
+                <span class="line">  <span class="key">"version"</span>: <span class="string">"1.0.0"</span>,</span>
+                <span class="line">  <span class="key">"uptime"</span>: <span class="string">"running"</span></span>
+                <span class="line"><span class="brace">}</span></span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span>Powered by Nginx</span>
+            <span class="version-badge">v1.0.0</span>
+        </div>
     </div>
 </body>
 </html>
-EOF
+HTMLEOF
 
-    # 备份默认配置
+    # 替换占位符
+    sudo sed -i "s/DOMAIN_PLACEHOLDER/${DOMAIN_NAME}/g" /var/www/api.${DOMAIN_NAME}/html/index.html
+
+    # 删除默认配置的软链接
     if [[ -f /etc/nginx/sites-enabled/default ]]; then
-        sudo mv /etc/nginx/sites-enabled/default /etc/nginx/sites-enabled/default.bak
+        sudo rm -f /etc/nginx/sites-enabled/default
+        print_info "已移除默认站点配置"
+    fi
+
+    # 备份默认配置文件
+    if [[ -f /etc/nginx/sites-available/default ]]; then
+        sudo mv /etc/nginx/sites-available/default /etc/nginx/sites-available/default.bak
+        print_info "已备份 default 配置到 default.bak"
     fi
 
     # 创建 Nginx 配置
