@@ -51,6 +51,38 @@ Inspired by "Gödel, Escher, Bach".
 curl -o CLAUDE.md https://raw.githubusercontent.com/JessyTsui/ai-coding-kit/main/protocols/fractal-docs.md
 ```
 
+### Server Scripts / 服务器脚本
+
+One-command server setup scripts for Ubuntu.
+
+一键服务器配置脚本，适用于 Ubuntu。
+
+#### [server-init.sh](./scripts/server/server-init.sh)
+
+Initialize a fresh Ubuntu server with essential tools: Git, Docker, Miniconda, Nginx, and more. Supports both China and overseas mirrors.
+
+初始化全新 Ubuntu 服务器，安装必备工具：Git、Docker、Miniconda、Nginx 等。支持国内/海外镜像源。
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JessyTsui/ai-coding-kit/master/scripts/server/server-init.sh | bash
+```
+
+#### [ssl-setup.sh](./scripts/server/ssl-setup.sh)
+
+Interactive SSL certificate management with acme.sh. Supports Cloudflare, Aliyun, and Tencent Cloud DNS verification with auto-renewal.
+
+交互式 SSL 证书管理，基于 acme.sh。支持 Cloudflare、阿里云、腾讯云 DNS 验证，自动续期。
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JessyTsui/ai-coding-kit/master/scripts/server/ssl-setup.sh | bash
+```
+
+**Features / 功能:**
+- Interactive domain & subdomain input / 交互式域名和子域名输入
+- DNS API verification (Cloudflare / Aliyun / Tencent) / DNS API 验证
+- Auto-install to `/etc/ssl/certs/{domain}/` / 自动安装证书到指定路径
+- Auto-renewal with nginx reload / 自动续期并重载 Nginx
+
 ---
 
 ## Usage / 使用
