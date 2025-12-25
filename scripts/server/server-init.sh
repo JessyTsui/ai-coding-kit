@@ -736,19 +736,28 @@ HTMLEOF
     # 替换占位符
     sudo sed -i "s/DOMAIN_PLACEHOLDER/${DOMAIN_NAME}/g" /var/www/api.${DOMAIN_NAME}/html/index.html
 
+    print_info "DEBUG: 开始配置 Nginx 站点文件..."
+
     # 删除默认配置的软链接
+    print_info "DEBUG: 检查 sites-enabled/default..."
     if [[ -f /etc/nginx/sites-enabled/default ]]; then
         sudo rm -f /etc/nginx/sites-enabled/default
         print_info "已移除默认站点配置"
+    else
+        print_info "DEBUG: sites-enabled/default 不存在或已删除"
     fi
 
     # 备份默认配置文件
+    print_info "DEBUG: 检查 sites-available/default..."
     if [[ -f /etc/nginx/sites-available/default ]]; then
         sudo mv /etc/nginx/sites-available/default /etc/nginx/sites-available/default.bak
         print_info "已备份 default 配置到 default.bak"
+    else
+        print_info "DEBUG: sites-available/default 不存在或已备份"
     fi
 
     # 创建 Nginx 配置
+    print_info "DEBUG: 正在创建 /etc/nginx/sites-available/${DOMAIN_NAME}..."
     sudo tee /etc/nginx/sites-available/${DOMAIN_NAME} > /dev/null <<EOF
 # ${DOMAIN_NAME}: HTTP to HTTPS Redirect
 server {
@@ -835,10 +844,18 @@ server {
 # }
 EOF
 
+    print_info "DEBUG: 配置文件创建完成，验证文件是否存在..."
+    ls -la /etc/nginx/sites-available/ || true
+
     # 创建符号链接
+    print_info "DEBUG: 创建符号链接..."
     sudo ln -sf /etc/nginx/sites-available/${DOMAIN_NAME} /etc/nginx/sites-enabled/${DOMAIN_NAME}
 
+    print_info "DEBUG: 验证符号链接..."
+    ls -la /etc/nginx/sites-enabled/ || true
+
     # 检查配置并重载
+    print_info "DEBUG: 检查 Nginx 配置语法..."
     sudo nginx -t
     sudo systemctl reload nginx
 
