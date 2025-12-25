@@ -173,9 +173,10 @@ select_dns_provider() {
     echo ""
     echo "  1) Cloudflare"
     echo "  2) 阿里云 DNS"
-    echo "  3) 腾讯云 DNSPod"
+    echo "  3) 腾讯云 DNS (腾讯云控制台)"
+    echo "  4) DNSPod (dnspod.cn)"
     echo ""
-    read -p "请输入选项 [1-3]: " dns_choice < /dev/tty
+    read -p "请输入选项 [1-4]: " dns_choice < /dev/tty
 
     case $dns_choice in
         1)
@@ -189,8 +190,13 @@ select_dns_provider() {
             input_aliyun_credentials
             ;;
         3)
+            DNS_PROVIDER="dns_tencent"
+            print_info "已选择: 腾讯云 DNS"
+            input_tencent_credentials
+            ;;
+        4)
             DNS_PROVIDER="dns_dp"
-            print_info "已选择: 腾讯云 DNSPod"
+            print_info "已选择: DNSPod"
             input_dnspod_credentials
             ;;
         *)
@@ -251,16 +257,39 @@ input_aliyun_credentials() {
 }
 
 #===============================================================================
-# 输入腾讯云 DNSPod 凭证
+# 输入腾讯云 DNS 凭证 (腾讯云控制台)
+#===============================================================================
+input_tencent_credentials() {
+    echo ""
+    echo -e "${YELLOW}请输入腾讯云 API 凭证:${NC}"
+    echo "  获取方式: https://console.cloud.tencent.com/cam/capi"
+    echo ""
+
+    read -p "Tencent_SecretId: " Tencent_SecretId < /dev/tty
+    read -p "Tencent_SecretKey: " Tencent_SecretKey < /dev/tty
+
+    if [[ -z "$Tencent_SecretId" ]] || [[ -z "$Tencent_SecretKey" ]]; then
+        print_error "Tencent_SecretId 和 Tencent_SecretKey 不能为空"
+        exit 1
+    fi
+
+    export Tencent_SecretId
+    export Tencent_SecretKey
+
+    print_success "腾讯云凭证已设置"
+}
+
+#===============================================================================
+# 输入 DNSPod 凭证 (dnspod.cn)
 #===============================================================================
 input_dnspod_credentials() {
     echo ""
-    echo -e "${YELLOW}请输入腾讯云 DNSPod API 凭证:${NC}"
-    echo "  获取方式: 腾讯云控制台 -> 访问管理 -> API密钥管理"
+    echo -e "${YELLOW}请输入 DNSPod API 凭证:${NC}"
+    echo "  获取方式: https://console.dnspod.cn/account/token/token"
     echo ""
 
-    read -p "DP_Id (SecretId): " DP_Id < /dev/tty
-    read -p "DP_Key (SecretKey): " DP_Key < /dev/tty
+    read -p "DP_Id (Token ID): " DP_Id < /dev/tty
+    read -p "DP_Key (Token): " DP_Key < /dev/tty
 
     if [[ -z "$DP_Id" ]] || [[ -z "$DP_Key" ]]; then
         print_error "DP_Id 和 DP_Key 不能为空"
@@ -270,7 +299,7 @@ input_dnspod_credentials() {
     export DP_Id
     export DP_Key
 
-    print_success "腾讯云 DNSPod 凭证已设置"
+    print_success "DNSPod 凭证已设置"
 }
 
 #===============================================================================
