@@ -30,6 +30,7 @@ SUBDOMAINS=()
 DNS_PROVIDER=""
 CERT_PATH="/etc/ssl/certs"
 ACME_HOME="$HOME/.acme.sh"
+REGION="overseas"  # china or overseas
 
 #===============================================================================
 # 打印函数
@@ -80,6 +81,34 @@ show_menu() {
     echo "║                                                            ║"
     echo "╚════════════════════════════════════════════════════════════╝"
     echo -e "${NC}"
+}
+
+#===============================================================================
+# 选择服务器地区
+#===============================================================================
+select_region() {
+    echo -e "${YELLOW}请选择服务器所在地区:${NC}"
+    echo ""
+    echo "  1) 国内服务器 (使用国内镜像源加速)"
+    echo "  2) 海外服务器 (使用官方源)"
+    echo ""
+    read -p "请输入选项 [1/2]: " region_choice < /dev/tty
+
+    case $region_choice in
+        1)
+            REGION="china"
+            print_info "已选择: 国内服务器 - 将使用国内镜像源"
+            ;;
+        2|"")
+            REGION="overseas"
+            print_info "已选择: 海外服务器 - 将使用官方源"
+            ;;
+        *)
+            print_warning "无效选项，默认使用海外服务器配置"
+            REGION="overseas"
+            ;;
+    esac
+    echo ""
 }
 
 #===============================================================================
@@ -261,13 +290,23 @@ install_acme() {
     # 安装依赖
     if command -v apt &> /dev/null; then
         sudo apt update
-        sudo apt install -y curl socat
+        sudo apt install -y curl socat git
     elif command -v yum &> /dev/null; then
-        sudo yum install -y curl socat
+        sudo yum install -y curl socat git
     fi
 
-    # 安装 acme.sh
-    curl https://get.acme.sh | sh -s email=admin@${DOMAIN_NAME}
+    # 安装 acme.sh (根据地区选择源)
+    if [[ "$REGION" == "china" ]]; then
+        print_info "使用国内镜像源安装..."
+        # 使用 gitee 镜像
+        git clone https://gitee.com/neilpang/acme.sh.git /tmp/acme.sh
+        cd /tmp/acme.sh
+        ./acme.sh --install -m admin@${DOMAIN_NAME}
+        cd -
+        rm -rf /tmp/acme.sh
+    else
+        curl https://get.acme.sh | sh -s email=admin@${DOMAIN_NAME}
+    fi
 
     if [[ ! -f "$ACME_HOME/acme.sh" ]]; then
         print_error "acme.sh 安装失败"
@@ -424,6 +463,7 @@ show_summary() {
 confirm_operation() {
     echo ""
     echo -e "${YELLOW}======== 操作确认 ========${NC}"
+    echo "  服务器地区: $([ "$REGION" == "china" ] && echo "国内" || echo "海外")"
     echo "  主域名: ${DOMAIN_NAME}"
     echo "  www:    www.${DOMAIN_NAME}"
     for sub in "${SUBDOMAINS[@]}"; do
@@ -446,6 +486,7 @@ confirm_operation() {
 main() {
     check_sudo
     show_menu
+    select_region
     input_domain
     input_subdomains
     select_dns_provider
