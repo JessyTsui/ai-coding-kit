@@ -93,18 +93,6 @@ configure_proxy() {
     GENERATED_PASS=$(generate_password)
     read -p "代理密码 [自动生成: ${GENERATED_PASS}]: " PROXY_PASS
     PROXY_PASS=${PROXY_PASS:-$GENERATED_PASS}
-
-    # IP 白名单配置
-    echo ""
-    echo "是否配置 IP 白名单? (只允许指定 IP 访问，更安全)"
-    read -p "配置 IP 白名单? (y/n) [n]: " use_whitelist
-
-    WHITELIST_IPS=""
-    if [ "$use_whitelist" = "y" ]; then
-        echo "请输入允许访问的 IP 地址 (多个 IP 用空格分隔)"
-        echo "例如: 1.2.3.4 5.6.7.8"
-        read -p "IP 白名单: " WHITELIST_IPS
-    fi
 }
 
 # 启动代理服务
@@ -138,30 +126,12 @@ configure_firewall() {
 
     if command -v ufw &> /dev/null; then
         ufw allow 22/tcp
-
-        if [ -n "$WHITELIST_IPS" ]; then
-            # 配置 IP 白名单
-            for ip in $WHITELIST_IPS; do
-                ufw allow from $ip to any port ${PROXY_PORT}
-                info "允许 IP: $ip 访问端口 ${PROXY_PORT}"
-            done
-            ufw deny ${PROXY_PORT}
-        else
-            ufw allow ${PROXY_PORT}/tcp
-        fi
-
+        ufw allow ${PROXY_PORT}/tcp
         ufw --force enable
         success "UFW 防火墙配置完成"
 
     elif command -v firewall-cmd &> /dev/null; then
-        if [ -n "$WHITELIST_IPS" ]; then
-            for ip in $WHITELIST_IPS; do
-                firewall-cmd --permanent --add-rich-rule="rule family='ipv4' source address='$ip' port protocol='tcp' port='${PROXY_PORT}' accept"
-                info "允许 IP: $ip 访问端口 ${PROXY_PORT}"
-            done
-        else
-            firewall-cmd --permanent --add-port=${PROXY_PORT}/tcp
-        fi
+        firewall-cmd --permanent --add-port=${PROXY_PORT}/tcp
         firewall-cmd --reload
         success "Firewalld 防火墙配置完成"
 
@@ -240,15 +210,6 @@ show_completion() {
     echo -e "${YELLOW}完整代理 URL:${NC}"
     echo "  socks5://${PROXY_USER}:${PROXY_PASS}@${SERVER_IP}:${PROXY_PORT}"
     echo ""
-
-    if [ -n "$WHITELIST_IPS" ]; then
-        echo -e "${YELLOW}IP 白名单:${NC}"
-        for ip in $WHITELIST_IPS; do
-            echo "  - $ip"
-        done
-        echo ""
-    fi
-
     echo -e "${YELLOW}常用命令:${NC}"
     echo "  查看状态: docker ps | grep socks5-proxy"
     echo "  查看日志: docker logs -f socks5-proxy"
