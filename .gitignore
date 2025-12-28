@@ -19,3 +19,11 @@ __pycache__/
 # Environment
 .env
 .env.local
+
+# SSH Keys & Secrets
+*.pem
+*.ppk
+*_rsa
+*_rsa.pub
+id_*
+*.key
