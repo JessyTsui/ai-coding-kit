@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.zeabur.app/project.json",
+  "build": {
+    "type": "nodejs",
+    "build_command": "npm install && npm run install:web && npm run build:web && npm run setup",
+    "start_command": "node src/app.js"
+  },
+  "healthcheck": {
+    "path": "/health",
+    "port": 3000
+  },
+  "addons": [
+    {
+      "type": "redis"
+    }
+  ],
+  "ports": [
+    {
+      "port": 3000,
+      "type": "http"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "PORT": "3000"
+  }
+}
