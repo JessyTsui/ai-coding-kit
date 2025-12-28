@@ -165,6 +165,9 @@ TIMEZONE_OFFSET=8
 
 # 会话配置
 STICKY_SESSION_TTL_HOURS=1
+
+# API Key 前缀
+API_KEY_PREFIX=dubrify
 EOF
 
     # 创建 docker-compose.yml
@@ -186,6 +189,7 @@ services:
       - REDIS_PORT=6379
       - NODE_ENV=production
       - TIMEZONE_OFFSET=8
+      - API_KEY_PREFIX=dubrify
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
@@ -237,22 +241,37 @@ EOF
     success "配置文件创建完成"
 }
 
+# 获取 docker compose 命令
+get_compose_cmd() {
+    if docker compose version &> /dev/null; then
+        echo "docker compose"
+    elif command -v docker-compose &> /dev/null; then
+        echo "docker-compose"
+    else
+        error "Docker Compose 未安装"
+    fi
+}
+
 # 启动服务
 start_service() {
     info "正在启动服务..."
     cd /opt/claude-relay-service
-    docker-compose pull
-    docker-compose up -d
+
+    COMPOSE_CMD=$(get_compose_cmd)
+    info "使用命令: $COMPOSE_CMD"
+
+    $COMPOSE_CMD pull
+    $COMPOSE_CMD up -d
 
     # 等待服务启动
     info "等待服务启动..."
     sleep 10
 
     # 检查服务状态
-    if docker-compose ps | grep -q "Up"; then
+    if $COMPOSE_CMD ps | grep -q "Up\|running"; then
         success "服务启动成功!"
     else
-        error "服务启动失败，请检查日志: docker-compose logs"
+        error "服务启动失败，请检查日志: $COMPOSE_CMD logs"
     fi
 }
 
@@ -279,6 +298,15 @@ show_completion() {
     # 获取服务器 IP
     SERVER_IP=$(curl -s ifconfig.me || curl -s ip.sb || echo "YOUR_SERVER_IP")
 
+    # 获取 docker compose 命令
+    COMPOSE_CMD=$(get_compose_cmd)
+
+    # 等待 init.json 生成
+    sleep 3
+
+    # 获取管理员凭据
+    ADMIN_CREDS=$(docker exec claude-relay-service cat /app/data/init.json 2>/dev/null || echo "")
+
     echo ""
     echo -e "${GREEN}============================================${NC}"
     echo -e "${GREEN}   Claude Relay Service 部署完成!${NC}"
@@ -287,13 +315,20 @@ show_completion() {
     echo -e "管理界面: ${BLUE}http://${SERVER_IP}:3000/admin-next/${NC}"
     echo ""
     echo -e "${YELLOW}管理员凭据:${NC}"
-    echo "查看命令: docker exec claude-relay-service cat /app/data/init.json"
+    if [ -n "$ADMIN_CREDS" ]; then
+        echo "$ADMIN_CREDS"
+        echo ""
+        echo -e "${YELLOW}(请妥善保存以上账号密码)${NC}"
+    else
+        echo "查看命令: docker exec claude-relay-service cat /app/data/init.json"
+    fi
     echo ""
     echo -e "${YELLOW}常用命令:${NC}"
-    echo "查看日志: cd /opt/claude-relay-service && docker-compose logs -f"
-    echo "重启服务: cd /opt/claude-relay-service && docker-compose restart"
-    echo "停止服务: cd /opt/claude-relay-service && docker-compose down"
-    echo "更新服务: cd /opt/claude-relay-service && docker-compose pull && docker-compose up -d"
+    echo "查看日志: cd /opt/claude-relay-service && $COMPOSE_CMD logs -f"
+    echo "重启服务: cd /opt/claude-relay-service && $COMPOSE_CMD restart"
+    echo "停止服务: cd /opt/claude-relay-service && $COMPOSE_CMD down"
+    echo "更新服务: cd /opt/claude-relay-service && $COMPOSE_CMD pull && $COMPOSE_CMD up -d"
+    echo "查看密码: docker exec claude-relay-service cat /app/data/init.json"
     echo ""
 
     if [ -n "$PROXY_HOST" ]; then
@@ -307,9 +342,9 @@ show_completion() {
 
     echo -e "${YELLOW}下一步:${NC}"
     echo "1. 访问管理界面"
-    echo "2. 使用管理员凭据登录"
-    echo "3. 添加 Claude 账户 (记得配置代理)"
-    echo "4. 创建 API Key 分发给用户"
+    echo "2. 使用上面的管理员凭据登录"
+    echo "3. 添加 Claude 账户"
+    echo "4. 创建 API Key 分发给用户 (前缀: dubrify_)"
     echo ""
 }
 
